@@ -1,61 +1,23 @@
-# 📌 Mini Calc Language Interpreter
+# 📌 Project Title & Description
+## Mini Calc Language Interpreter (Java)
 
-A lightweight Java interpreter for a custom, indentation-aware scripting language.
-It processes source code in three stages—**Tokenizer → Parser → Evaluator**—to execute assignments, arithmetic/string expressions, conditionals, loops, and print statements.
-
----
-
-## ⚙️ How the System Works (Tokenizer → Parser → Evaluator)
-
-1. **Tokenizer**
-   - Reads raw source text line by line.
-   - Normalizes line endings.
-   - Converts characters into tokens (numbers, strings, identifiers, operators, control symbols).
-   - Emits structural tokens (`INDENT`, `DEDENT`, `NEWLINE`) for block-aware syntax.
-
-2. **Parser**
-   - Consumes the token stream.
-   - Builds an internal executable representation:
-     - **Instructions** (`AssignInstruction`, `PrintInstruction`, `IfInstruction`, `RepeatInstruction`)
-     - **Expression nodes** (`NumberNode`, `StringNode`, `VariableNode`, `BinaryOpNode`)
-   - Enforces grammar rules and provides line-aware parse errors.
-
-3. **Evaluator (Execution Engine)**
-   - Executes instructions in order using a shared `Environment` (variable store).
-   - Evaluates expressions recursively.
-   - Produces output for print instructions.
+A modular interpreter for a custom indentation-aware scripting language. The project is structured around a clean execution pipeline and applies software engineering best practices (SOLID, DRY, high cohesion, and loose coupling) to keep the codebase maintainable and extensible.
 
 ---
 
-## 🧠 Module Ownership
+## ⚙️ Working Flow
+`Tokenizer → Parser → Evaluator`
 
-- **Tokenizer** – implemented by **Shipi Shaw**
-- **Parser** – implemented by **Mausam Kumari**
-- **Evaluator** – implemented by **Yuvraj Chirag**
+1. **Tokenizer** converts raw source code into lexical tokens (`Token`).
+2. **Parser** builds typed instruction/expression objects from tokens.
+3. **Evaluator** executes parsed instructions against an environment.
 
 ---
 
-## 🚀 Setup & Usage Instructions
-
-### Prerequisites
-- Java 17+ (or Java 11+ if your environment supports `Files.readString`)
-
-### Compile
-```bash
-javac src/main/java/*.java
-```
-
-### Run
-```bash
-java -cp src/main/java Main examples/program1.calc
-```
-
-### Run with other examples
-```bash
-java -cp src/main/java Main examples/program2.calc
-java -cp src/main/java Main examples/program3.calc
-java -cp src/main/java Main examples/program4.calc
-```
+## 🧠 Module Responsibilities
+- **Tokenizer – Shipi Shaw**
+- **Parser – Mausam Kumari**
+- **Evaluator – Yuvraj Chirag**
 
 ---
 
@@ -72,30 +34,58 @@ DEMO_JAVA_PROJ/
 │   ├── Main.java
 │   ├── Interpreter.java
 │   ├── Tokenizer.java
-│   ├── Parser.java
 │   ├── Token.java
 │   ├── TokenType.java
-│   ├── Environment.java
+│   ├── Parser.java
+│   ├── CalcParser.java
+│   ├── Evaluator.java
+│   ├── InstructionEvaluator.java
 │   ├── Instruction.java
 │   ├── InstructionExecutor.java
-│   ├── AssignInstruction.java
-│   ├── PrintInstruction.java
-│   ├── IfInstruction.java
-│   ├── RepeatInstruction.java
 │   ├── Expression.java
+│   ├── LiteralNode.java
 │   ├── NumberNode.java
 │   ├── StringNode.java
 │   ├── VariableNode.java
 │   ├── BinaryOpNode.java
+│   ├── AssignInstruction.java
+│   ├── PrintInstruction.java
+│   ├── IfInstruction.java
+│   ├── RepeatInstruction.java
+│   ├── Environment.java
 │   └── ValueHelper.java
 └── README.md
 ```
 
 ---
 
+## 🚀 Setup & Usage Instructions
+
+### Prerequisites
+- Java 17+
+
+### Compile
+```bash
+javac src/main/java/*.java
+```
+
+### Run
+```bash
+java -cp src/main/java Main examples/program1.calc
+```
+
+### Try More Examples
+```bash
+java -cp src/main/java Main examples/program2.calc
+java -cp src/main/java Main examples/program3.calc
+java -cp src/main/java Main examples/program4.calc
+```
+
+---
+
 ## 🧩 Example Input & Output
 
-### Example (`examples/program1.calc`)
+### Input (`examples/program1.calc`)
 ```text
 x := 10
 y := 20
@@ -110,32 +100,22 @@ y := 20
 ---
 
 ## ✨ Features
-
-- Clean **Tokenizer → Parser → Evaluator** architecture.
-- Block syntax using indentation (`INDENT` / `DEDENT`) with validation.
-- Variable assignment and lookup.
-- Arithmetic operations: `+`, `-`, `*`, `/`.
-- Comparison and equality: `>`, `<`, `==`.
-- String literals and concatenation support via `+`.
-- Conditional execution with `? condition =>` blocks.
-- Looping with `@ count =>` blocks.
-- Line-aware runtime and parse error messages.
+- Layered architecture: **Tokenizer → Parser → Evaluator**.
+- Generics for reusable contracts and typed AST components:
+  - `Expression<T>`
+  - `Instruction<T>`
+  - `Parser<T>`
+  - `Evaluator<T>`
+  - `Environment<T>`
+  - `LiteralNode<T>`
+- Dependency injection in `Interpreter` for better testability.
+- Better runtime validation (e.g., division by zero, negative repeat count).
+- Clear comments and descriptive method names for maintainability.
 
 ---
 
 ## 🛠️ Technologies Used
-
-- **Java** (core language features)
+- **Java 17**
 - **Java Collections Framework** (`List`, `Map`, `Deque`)
-- **NIO** (`java.nio.file.Files`, `Path`) for source file reading
-
----
-
-## Engineering Notes
-
-This refactor emphasizes maintainability and software engineering best practices:
-- **SOLID-aligned structure** through clear class responsibilities.
-- **DRY principles** via shared helpers (`ValueHelper`, `InstructionExecutor`).
-- **Separation of concerns** across lexical analysis, parsing, and execution.
-- **Readable naming** and method extraction to simplify future extension.
-- **Inline documentation** for non-trivial logic and design intent.
+- **Java NIO** (`Files`, `Path`) for file IO
+- **Functional interfaces** (`Function`) for dependency wiring

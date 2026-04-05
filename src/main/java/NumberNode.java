@@ -1,12 +1,8 @@
-public class NumberNode implements Expression {
-    private final double value;
-
+/**
+ * Backward-compatible numeric literal node.
+ */
+public class NumberNode extends LiteralNode<Double> {
     public NumberNode(double value) {
-        this.value = value;
-    }
-
-    @Override
-    public Object evaluate(Environment env) {
-        return value;
+        super(value);
     }
 }

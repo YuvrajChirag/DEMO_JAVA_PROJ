@@ -1,12 +1,8 @@
-public class StringNode implements Expression {
-    private final String value;
-
+/**
+ * Backward-compatible string literal node.
+ */
+public class StringNode extends LiteralNode<String> {
     public StringNode(String value) {
-        this.value = value;
-    }
-
-    @Override
-    public Object evaluate(Environment env) {
-        return value;
+        super(value);
     }
 }

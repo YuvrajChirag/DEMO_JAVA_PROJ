@@ -1,20 +1,19 @@
 /**
- * Expression node that evaluates binary operations such as arithmetic,
- * comparisons, and equality checks.
+ * Expression node that evaluates arithmetic, comparison, and equality operations.
  */
-public class BinaryOpNode implements Expression {
-    private final Expression leftOperand;
+public class BinaryOpNode implements Expression<Object> {
+    private final Expression<Object> leftOperand;
     private final String operator;
-    private final Expression rightOperand;
+    private final Expression<Object> rightOperand;
 
-    public BinaryOpNode(Expression leftOperand, String operator, Expression rightOperand) {
+    public BinaryOpNode(Expression<Object> leftOperand, String operator, Expression<Object> rightOperand) {
         this.leftOperand = leftOperand;
         this.operator = operator;
         this.rightOperand = rightOperand;
     }
 
     @Override
-    public Object evaluate(Environment env) {
+    public Object evaluate(Environment<Object> env) {
         Object leftValue = leftOperand.evaluate(env);
         Object rightValue = rightOperand.evaluate(env);
 
@@ -28,8 +27,11 @@ public class BinaryOpNode implements Expression {
                 return ValueHelper.asNumber(leftValue, "Left operand for '*'")
                         * ValueHelper.asNumber(rightValue, "Right operand for '*'");
             case "/":
-                return ValueHelper.asNumber(leftValue, "Left operand for '/'")
-                        / ValueHelper.asNumber(rightValue, "Right operand for '/'");
+                double divisor = ValueHelper.asNumber(rightValue, "Right operand for '/'");
+                if (divisor == 0.0d) {
+                    throw new ArithmeticException("Division by zero is not allowed.");
+                }
+                return ValueHelper.asNumber(leftValue, "Left operand for '/'") / divisor;
             case ">":
                 return ValueHelper.asNumber(leftValue, "Left operand for '>'")
                         > ValueHelper.asNumber(rightValue, "Right operand for '>'");
@@ -39,12 +41,11 @@ public class BinaryOpNode implements Expression {
             case "==":
                 return evaluateEquality(leftValue, rightValue);
             default:
-                throw new RuntimeException("Unknown operator: " + operator);
+                throw new IllegalArgumentException("Unknown operator: " + operator);
         }
     }
 
     private Object evaluateAddition(Object leftValue, Object rightValue) {
-        // Supports string concatenation if either side is textual.
         if (leftValue instanceof String || rightValue instanceof String) {
             return String.valueOf(leftValue) + rightValue;
         }

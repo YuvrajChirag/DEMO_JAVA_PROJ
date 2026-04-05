@@ -5,11 +5,10 @@ import java.util.List;
  */
 public final class InstructionExecutor {
     private InstructionExecutor() {
-        // Utility class
     }
 
-    public static void executeAll(List<Instruction> instructions, Environment environment) {
-        for (Instruction instruction : instructions) {
+    public static <T> void executeAll(List<Instruction<T>> instructions, Environment<T> environment) {
+        for (Instruction<T> instruction : instructions) {
             instruction.execute(environment);
         }
     }

@@ -1,4 +1,7 @@
-public class VariableNode implements Expression {
+/**
+ * Expression node for reading variable values from the environment.
+ */
+public class VariableNode implements Expression<Object> {
     private final String name;
 
     public VariableNode(String name) {
@@ -6,7 +9,7 @@ public class VariableNode implements Expression {
     }
 
     @Override
-    public Object evaluate(Environment env) {
+    public Object evaluate(Environment<Object> env) {
         return env.get(name);
     }
 }

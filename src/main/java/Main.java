@@ -10,7 +10,7 @@ public class Main {
         }
 
         String sourceCode = Files.readString(Path.of(args[0]));
-        Interpreter interpreter = new Interpreter();
+        Interpreter interpreter = Interpreter.defaultInterpreter();
         interpreter.run(sourceCode);
     }
 }

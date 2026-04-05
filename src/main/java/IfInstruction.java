@@ -1,23 +1,20 @@
 import java.util.List;
 
 /**
- * Conditional instruction that executes a nested block when the condition
- * evaluates to {@code true}.
+ * Conditional instruction that executes body instructions when condition is true.
  */
-public class IfInstruction implements Instruction {
-    private final Expression conditionExpression;
-    private final List<Instruction> bodyInstructions;
+public class IfInstruction implements Instruction<Object> {
+    private final Expression<Boolean> conditionExpression;
+    private final List<Instruction<Object>> bodyInstructions;
 
-    public IfInstruction(Expression conditionExpression, List<Instruction> bodyInstructions) {
+    public IfInstruction(Expression<Boolean> conditionExpression, List<Instruction<Object>> bodyInstructions) {
         this.conditionExpression = conditionExpression;
         this.bodyInstructions = bodyInstructions;
     }
 
     @Override
-    public void execute(Environment env) {
-        Object conditionValue = conditionExpression.evaluate(env);
-        boolean shouldExecute = ValueHelper.asBoolean(conditionValue, "If condition");
-        if (shouldExecute) {
+    public void execute(Environment<Object> env) {
+        if (conditionExpression.evaluate(env)) {
             InstructionExecutor.executeAll(bodyInstructions, env);
         }
     }

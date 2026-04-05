@@ -1,9 +1,12 @@
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Converts a token stream into executable instructions and expression trees.
+ */
 public class Parser {
     private final List<Token> tokens;
-    private int current = 0;
+    private int currentIndex = 0;
 
     public Parser(List<Token> tokens) {
         this.tokens = tokens;
@@ -24,21 +27,11 @@ public class Parser {
 
     private Instruction parseInstruction() {
         if (match(TokenType.IF)) {
-            Expression condition = parseExpression();
-            consume(TokenType.ARROW, "Expected '=>' after if condition.");
-            consume(TokenType.NEWLINE, "Expected newline after if header.");
-            consume(TokenType.INDENT, "Expected indented block after if.");
-            List<Instruction> body = parseBlock();
-            return new IfInstruction(condition, body);
+            return parseIfInstruction();
         }
 
         if (match(TokenType.REPEAT)) {
-            Expression countExpr = parseExpression();
-            consume(TokenType.ARROW, "Expected '=>' after repeat count.");
-            consume(TokenType.NEWLINE, "Expected newline after repeat header.");
-            consume(TokenType.INDENT, "Expected indented block after repeat.");
-            List<Instruction> body = parseBlock();
-            return new RepeatInstruction(countExpr, body);
+            return parseRepeatInstruction();
         }
 
         if (match(TokenType.PRINT)) {
@@ -47,13 +40,35 @@ public class Parser {
         }
 
         if (check(TokenType.IDENTIFIER) && checkNext(TokenType.ASSIGN)) {
-            String name = consume(TokenType.IDENTIFIER, "Expected variable name.").getValue();
-            consume(TokenType.ASSIGN, "Expected ':=' after variable name.");
-            Expression expression = parseExpression();
-            return new AssignInstruction(name, expression);
+            return parseAssignmentInstruction();
         }
 
         throw error(peek(), "Unknown instruction starting with token " + peek().getType());
+    }
+
+    private Instruction parseIfInstruction() {
+        Expression condition = parseExpression();
+        consume(TokenType.ARROW, "Expected '=>' after if condition.");
+        consume(TokenType.NEWLINE, "Expected newline after if header.");
+        consume(TokenType.INDENT, "Expected indented block after if.");
+        List<Instruction> body = parseBlock();
+        return new IfInstruction(condition, body);
+    }
+
+    private Instruction parseRepeatInstruction() {
+        Expression countExpression = parseExpression();
+        consume(TokenType.ARROW, "Expected '=>' after repeat count.");
+        consume(TokenType.NEWLINE, "Expected newline after repeat header.");
+        consume(TokenType.INDENT, "Expected indented block after repeat.");
+        List<Instruction> body = parseBlock();
+        return new RepeatInstruction(countExpression, body);
+    }
+
+    private Instruction parseAssignmentInstruction() {
+        String variableName = consume(TokenType.IDENTIFIER, "Expected variable name.").getValue();
+        consume(TokenType.ASSIGN, "Expected ':=' after variable name.");
+        Expression expression = parseExpression();
+        return new AssignInstruction(variableName, expression);
     }
 
     private List<Instruction> parseBlock() {
@@ -75,33 +90,33 @@ public class Parser {
     }
 
     private Expression parseComparison() {
-        Expression expr = parseTermExpression();
+        Expression expression = parseTermExpression();
         while (match(TokenType.GT, TokenType.LT, TokenType.EQEQ)) {
             Token operator = previous();
             Expression right = parseTermExpression();
-            expr = new BinaryOpNode(expr, operator.getValue(), right);
+            expression = new BinaryOpNode(expression, operator.getValue(), right);
         }
-        return expr;
+        return expression;
     }
 
     private Expression parseTermExpression() {
-        Expression expr = parseFactor();
+        Expression expression = parseFactor();
         while (match(TokenType.PLUS, TokenType.MINUS)) {
             Token operator = previous();
             Expression right = parseFactor();
-            expr = new BinaryOpNode(expr, operator.getValue(), right);
+            expression = new BinaryOpNode(expression, operator.getValue(), right);
         }
-        return expr;
+        return expression;
     }
 
     private Expression parseFactor() {
-        Expression expr = parsePrimary();
+        Expression expression = parsePrimary();
         while (match(TokenType.STAR, TokenType.SLASH)) {
             Token operator = previous();
             Expression right = parsePrimary();
-            expr = new BinaryOpNode(expr, operator.getValue(), right);
+            expression = new BinaryOpNode(expression, operator.getValue(), right);
         }
-        return expr;
+        return expression;
     }
 
     private Expression parsePrimary() {
@@ -124,7 +139,7 @@ public class Parser {
 
     private void skipNewlines() {
         while (match(TokenType.NEWLINE)) {
-            // skip
+            // Intentionally consume all contiguous line breaks.
         }
     }
 
@@ -138,8 +153,8 @@ public class Parser {
         return false;
     }
 
-    private Token consume(TokenType type, String message) {
-        if (check(type)) {
+    private Token consume(TokenType expectedType, String message) {
+        if (check(expectedType)) {
             return advance();
         }
         throw error(peek(), message);
@@ -153,15 +168,15 @@ public class Parser {
     }
 
     private boolean checkNext(TokenType type) {
-        if (current + 1 >= tokens.size()) {
+        if (currentIndex + 1 >= tokens.size()) {
             return false;
         }
-        return tokens.get(current + 1).getType() == type;
+        return tokens.get(currentIndex + 1).getType() == type;
     }
 
     private Token advance() {
         if (!isAtEnd()) {
-            current++;
+            currentIndex++;
         }
         return previous();
     }
@@ -171,11 +186,11 @@ public class Parser {
     }
 
     private Token peek() {
-        return tokens.get(current);
+        return tokens.get(currentIndex);
     }
 
     private Token previous() {
-        return tokens.get(current - 1);
+        return tokens.get(currentIndex - 1);
     }
 
     private RuntimeException error(Token token, String message) {

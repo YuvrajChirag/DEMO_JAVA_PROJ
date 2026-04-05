@@ -1,26 +1,32 @@
 import java.util.List;
 
+/**
+ * Loop instruction that repeats a nested block a computed number of times.
+ */
 public class RepeatInstruction implements Instruction {
-    private final Expression countExpression;
-    private final List<Instruction> body;
+    private final Expression repeatCountExpression;
+    private final List<Instruction> bodyInstructions;
 
-    public RepeatInstruction(Expression countExpression, List<Instruction> body) {
-        this.countExpression = countExpression;
-        this.body = body;
+    public RepeatInstruction(Expression repeatCountExpression, List<Instruction> bodyInstructions) {
+        this.repeatCountExpression = repeatCountExpression;
+        this.bodyInstructions = bodyInstructions;
     }
 
     @Override
     public void execute(Environment env) {
-        Object countValue = countExpression.evaluate(env);
-        if (!(countValue instanceof Number)) {
-            throw new RuntimeException("Repeat count must be numeric but got: " + countValue);
-        }
+        Object countValue = repeatCountExpression.evaluate(env);
+        int repeatCount = normalizeRepeatCount(countValue);
 
-        int count = (int) Math.floor(((Number) countValue).doubleValue());
-        for (int i = 0; i < count; i++) {
-            for (Instruction instruction : body) {
-                instruction.execute(env);
-            }
+        for (int iteration = 0; iteration < repeatCount; iteration++) {
+            InstructionExecutor.executeAll(bodyInstructions, env);
         }
+    }
+
+    /**
+     * Preserves previous behavior by flooring decimal counts.
+     */
+    private int normalizeRepeatCount(Object countValue) {
+        double numericCount = ValueHelper.asNumber(countValue, "Repeat count");
+        return (int) Math.floor(numericCount);
     }
 }

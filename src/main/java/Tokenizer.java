@@ -3,7 +3,17 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+/**
+ * Converts raw source code into tokens.
+ * <p>
+ * Responsibilities:
+ * - Normalize lines.
+ * - Track indentation (4 spaces) with INDENT/DEDENT tokens.
+ * - Produce lexical tokens for keywords, operators, identifiers, and literals.
+ */
 public class Tokenizer {
+    private static final int INDENT_SIZE = 4;
+
     private final String source;
 
     public Tokenizer(String source) {
@@ -15,44 +25,55 @@ public class Tokenizer {
         Deque<Integer> indentLevels = new ArrayDeque<>();
         indentLevels.push(0);
 
-        String normalized = source.replace("\r\n", "\n").replace('\r', '\n');
-        String[] lines = normalized.split("\n", -1);
+        String normalizedSource = source.replace("\r\n", "\n").replace('\r', '\n');
+        String[] lines = normalizedSource.split("\n", -1);
 
-        for (int i = 0; i < lines.length; i++) {
-            String line = lines[i];
-            int lineNumber = i + 1;
-            boolean isBlank = line.trim().isEmpty();
+        for (int index = 0; index < lines.length; index++) {
+            String line = lines[index];
+            int lineNumber = index + 1;
 
-            if (!isBlank) {
-                int indent = countIndent(line, lineNumber);
-                while (indent > indentLevels.peek()) {
-                    indentLevels.push(indentLevels.peek() + 4);
-                    if (indentLevels.peek() > indent) {
-                        throw new RuntimeException("Invalid indentation at line " + lineNumber);
-                    }
-                    tokens.add(new Token(TokenType.INDENT, "", lineNumber));
-                }
-                while (indent < indentLevels.peek()) {
-                    indentLevels.pop();
-                    tokens.add(new Token(TokenType.DEDENT, "", lineNumber));
-                }
-                if (indent != indentLevels.peek()) {
-                    throw new RuntimeException("Invalid indentation at line " + lineNumber);
-                }
-
-                tokenizeLine(line.substring(indent), lineNumber, tokens);
+            if (!line.trim().isEmpty()) {
+                processIndentation(tokens, indentLevels, line, lineNumber);
+                int currentIndent = countIndent(line, lineNumber);
+                tokenizeLine(line.substring(currentIndent), lineNumber, tokens);
             }
 
+            // Every source line explicitly ends with NEWLINE for simple parsing rules.
             tokens.add(new Token(TokenType.NEWLINE, "", lineNumber));
         }
 
-        while (indentLevels.peek() > 0) {
-            indentLevels.pop();
-            tokens.add(new Token(TokenType.DEDENT, "", lines.length));
-        }
-
+        closeOpenIndentationBlocks(tokens, indentLevels, lines.length);
         tokens.add(new Token(TokenType.EOF, "", lines.length + 1));
         return tokens;
+    }
+
+    private void processIndentation(List<Token> tokens, Deque<Integer> indentLevels, String line, int lineNumber) {
+        int indent = countIndent(line, lineNumber);
+
+        while (indent > indentLevels.peek()) {
+            int nextLevel = indentLevels.peek() + INDENT_SIZE;
+            indentLevels.push(nextLevel);
+            if (nextLevel > indent) {
+                throw new RuntimeException("Invalid indentation at line " + lineNumber);
+            }
+            tokens.add(new Token(TokenType.INDENT, "", lineNumber));
+        }
+
+        while (indent < indentLevels.peek()) {
+            indentLevels.pop();
+            tokens.add(new Token(TokenType.DEDENT, "", lineNumber));
+        }
+
+        if (indent != indentLevels.peek()) {
+            throw new RuntimeException("Invalid indentation at line " + lineNumber);
+        }
+    }
+
+    private void closeOpenIndentationBlocks(List<Token> tokens, Deque<Integer> indentLevels, int lineCount) {
+        while (indentLevels.peek() > 0) {
+            indentLevels.pop();
+            tokens.add(new Token(TokenType.DEDENT, "", lineCount));
+        }
     }
 
     private int countIndent(String line, int lineNumber) {
@@ -63,133 +84,160 @@ public class Tokenizer {
         if (indent < line.length() && line.charAt(indent) == '\t') {
             throw new RuntimeException("Tabs are not supported for indentation at line " + lineNumber);
         }
-        if (indent % 4 != 0) {
+        if (indent % INDENT_SIZE != 0) {
             throw new RuntimeException("Indentation must use multiples of 4 spaces at line " + lineNumber);
         }
         return indent;
     }
 
     private void tokenizeLine(String line, int lineNumber, List<Token> tokens) {
-        int i = 0;
-        while (i < line.length()) {
-            char c = line.charAt(i);
+        int currentIndex = 0;
+        while (currentIndex < line.length()) {
+            char currentChar = line.charAt(currentIndex);
 
-            if (Character.isWhitespace(c)) {
-                i++;
-                continue;
-            }
-
-            if (Character.isDigit(c)) {
-                int start = i;
-                while (i < line.length() && (Character.isDigit(line.charAt(i)) || line.charAt(i) == '.')) {
-                    i++;
-                }
-                tokens.add(new Token(TokenType.NUMBER, line.substring(start, i), lineNumber));
+            if (Character.isWhitespace(currentChar)) {
+                currentIndex++;
                 continue;
             }
 
-            if (Character.isLetter(c) || c == '_') {
-                int start = i;
-                while (i < line.length() && (Character.isLetterOrDigit(line.charAt(i)) || line.charAt(i) == '_')) {
-                    i++;
-                }
-                tokens.add(new Token(TokenType.IDENTIFIER, line.substring(start, i), lineNumber));
+            if (Character.isDigit(currentChar)) {
+                currentIndex = tokenizeNumber(line, lineNumber, tokens, currentIndex);
                 continue;
             }
 
-            if (c == '"') {
-                int start = ++i;
-                StringBuilder sb = new StringBuilder();
-                while (i < line.length() && line.charAt(i) != '"') {
-                    char ch = line.charAt(i);
-                    if (ch == '\\' && i + 1 < line.length()) {
-                        i++;
-                        char escaped = line.charAt(i);
-                        if (escaped == 'n') {
-                            sb.append('\n');
-                        } else if (escaped == 't') {
-                            sb.append('\t');
-                        } else {
-                            sb.append(escaped);
-                        }
-                    } else {
-                        sb.append(ch);
-                    }
-                    i++;
-                }
-                if (i >= line.length() || line.charAt(i) != '"') {
-                    throw new RuntimeException("Unterminated string at line " + lineNumber + " starting index " + start);
-                }
-                i++;
-                tokens.add(new Token(TokenType.STRING, sb.toString(), lineNumber));
+            if (Character.isLetter(currentChar) || currentChar == '_') {
+                currentIndex = tokenizeIdentifier(line, lineNumber, tokens, currentIndex);
                 continue;
             }
 
-            if (c == ':' && i + 1 < line.length() && line.charAt(i + 1) == '=') {
-                tokens.add(new Token(TokenType.ASSIGN, ":=", lineNumber));
-                i += 2;
-                continue;
-            }
-            if (c == '=' && i + 1 < line.length() && line.charAt(i + 1) == '>') {
-                tokens.add(new Token(TokenType.ARROW, "=>", lineNumber));
-                i += 2;
-                continue;
-            }
-            if (c == '=' && i + 1 < line.length() && line.charAt(i + 1) == '=') {
-                tokens.add(new Token(TokenType.EQEQ, "==", lineNumber));
-                i += 2;
-                continue;
-            }
-            if (c == '>' && i + 1 < line.length() && line.charAt(i + 1) == '>') {
-                tokens.add(new Token(TokenType.PRINT, ">>", lineNumber));
-                i += 2;
+            if (currentChar == '"') {
+                currentIndex = tokenizeString(line, lineNumber, tokens, currentIndex);
                 continue;
             }
 
-            switch (c) {
-                case '+':
-                    tokens.add(new Token(TokenType.PLUS, "+", lineNumber));
-                    i++;
-                    break;
-                case '-':
-                    tokens.add(new Token(TokenType.MINUS, "-", lineNumber));
-                    i++;
-                    break;
-                case '*':
-                    tokens.add(new Token(TokenType.STAR, "*", lineNumber));
-                    i++;
-                    break;
-                case '/':
-                    tokens.add(new Token(TokenType.SLASH, "/", lineNumber));
-                    i++;
-                    break;
-                case '>':
-                    tokens.add(new Token(TokenType.GT, ">", lineNumber));
-                    i++;
-                    break;
-                case '<':
-                    tokens.add(new Token(TokenType.LT, "<", lineNumber));
-                    i++;
-                    break;
-                case '?':
-                    tokens.add(new Token(TokenType.IF, "?", lineNumber));
-                    i++;
-                    break;
-                case '@':
-                    tokens.add(new Token(TokenType.REPEAT, "@", lineNumber));
-                    i++;
-                    break;
-                case '(':
-                    tokens.add(new Token(TokenType.LPAREN, "(", lineNumber));
-                    i++;
-                    break;
-                case ')':
-                    tokens.add(new Token(TokenType.RPAREN, ")", lineNumber));
-                    i++;
-                    break;
-                default:
-                    throw new RuntimeException("Unexpected character '" + c + "' at line " + lineNumber);
+            int nextIndex = tokenizeMultiCharacterToken(line, lineNumber, tokens, currentIndex);
+            if (nextIndex != currentIndex) {
+                currentIndex = nextIndex;
+                continue;
             }
+
+            currentIndex = tokenizeSingleCharacterToken(tokens, lineNumber, currentChar, currentIndex);
+        }
+    }
+
+    private int tokenizeNumber(String line, int lineNumber, List<Token> tokens, int startIndex) {
+        int endIndex = startIndex;
+        while (endIndex < line.length() && (Character.isDigit(line.charAt(endIndex)) || line.charAt(endIndex) == '.')) {
+            endIndex++;
+        }
+        tokens.add(new Token(TokenType.NUMBER, line.substring(startIndex, endIndex), lineNumber));
+        return endIndex;
+    }
+
+    private int tokenizeIdentifier(String line, int lineNumber, List<Token> tokens, int startIndex) {
+        int endIndex = startIndex;
+        while (endIndex < line.length()
+                && (Character.isLetterOrDigit(line.charAt(endIndex)) || line.charAt(endIndex) == '_')) {
+            endIndex++;
+        }
+        tokens.add(new Token(TokenType.IDENTIFIER, line.substring(startIndex, endIndex), lineNumber));
+        return endIndex;
+    }
+
+    private int tokenizeString(String line, int lineNumber, List<Token> tokens, int openingQuoteIndex) {
+        int currentIndex = openingQuoteIndex + 1;
+        StringBuilder value = new StringBuilder();
+
+        while (currentIndex < line.length() && line.charAt(currentIndex) != '"') {
+            char currentChar = line.charAt(currentIndex);
+            if (currentChar == '\\' && currentIndex + 1 < line.length()) {
+                currentIndex++;
+                value.append(resolveEscapeCharacter(line.charAt(currentIndex)));
+            } else {
+                value.append(currentChar);
+            }
+            currentIndex++;
+        }
+
+        if (currentIndex >= line.length() || line.charAt(currentIndex) != '"') {
+            throw new RuntimeException(
+                    "Unterminated string at line " + lineNumber + " starting index " + openingQuoteIndex);
+        }
+
+        tokens.add(new Token(TokenType.STRING, value.toString(), lineNumber));
+        return currentIndex + 1;
+    }
+
+    private char resolveEscapeCharacter(char escapedChar) {
+        switch (escapedChar) {
+            case 'n':
+                return '\n';
+            case 't':
+                return '\t';
+            default:
+                return escapedChar;
+        }
+    }
+
+    private int tokenizeMultiCharacterToken(String line, int lineNumber, List<Token> tokens, int currentIndex) {
+        if (matches(line, currentIndex, ":=")) {
+            tokens.add(new Token(TokenType.ASSIGN, ":=", lineNumber));
+            return currentIndex + 2;
+        }
+        if (matches(line, currentIndex, "=>")) {
+            tokens.add(new Token(TokenType.ARROW, "=>", lineNumber));
+            return currentIndex + 2;
+        }
+        if (matches(line, currentIndex, "==")) {
+            tokens.add(new Token(TokenType.EQEQ, "==", lineNumber));
+            return currentIndex + 2;
+        }
+        if (matches(line, currentIndex, ">>")) {
+            tokens.add(new Token(TokenType.PRINT, ">>", lineNumber));
+            return currentIndex + 2;
+        }
+        return currentIndex;
+    }
+
+    private boolean matches(String line, int index, String tokenText) {
+        return index + tokenText.length() <= line.length()
+                && line.substring(index, index + tokenText.length()).equals(tokenText);
+    }
+
+    private int tokenizeSingleCharacterToken(List<Token> tokens, int lineNumber, char currentChar, int currentIndex) {
+        switch (currentChar) {
+            case '+':
+                tokens.add(new Token(TokenType.PLUS, "+", lineNumber));
+                return currentIndex + 1;
+            case '-':
+                tokens.add(new Token(TokenType.MINUS, "-", lineNumber));
+                return currentIndex + 1;
+            case '*':
+                tokens.add(new Token(TokenType.STAR, "*", lineNumber));
+                return currentIndex + 1;
+            case '/':
+                tokens.add(new Token(TokenType.SLASH, "/", lineNumber));
+                return currentIndex + 1;
+            case '>':
+                tokens.add(new Token(TokenType.GT, ">", lineNumber));
+                return currentIndex + 1;
+            case '<':
+                tokens.add(new Token(TokenType.LT, "<", lineNumber));
+                return currentIndex + 1;
+            case '?':
+                tokens.add(new Token(TokenType.IF, "?", lineNumber));
+                return currentIndex + 1;
+            case '@':
+                tokens.add(new Token(TokenType.REPEAT, "@", lineNumber));
+                return currentIndex + 1;
+            case '(':
+                tokens.add(new Token(TokenType.LPAREN, "(", lineNumber));
+                return currentIndex + 1;
+            case ')':
+                tokens.add(new Token(TokenType.RPAREN, ")", lineNumber));
+                return currentIndex + 1;
+            default:
+                throw new RuntimeException("Unexpected character '" + currentChar + "' at line " + lineNumber);
         }
     }
 }

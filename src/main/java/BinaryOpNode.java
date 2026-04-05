@@ -1,49 +1,63 @@
+/**
+ * Expression node that evaluates binary operations such as arithmetic,
+ * comparisons, and equality checks.
+ */
 public class BinaryOpNode implements Expression {
-    private final Expression left;
+    private final Expression leftOperand;
     private final String operator;
-    private final Expression right;
+    private final Expression rightOperand;
 
-    public BinaryOpNode(Expression left, String operator, Expression right) {
-        this.left = left;
+    public BinaryOpNode(Expression leftOperand, String operator, Expression rightOperand) {
+        this.leftOperand = leftOperand;
         this.operator = operator;
-        this.right = right;
+        this.rightOperand = rightOperand;
     }
 
     @Override
     public Object evaluate(Environment env) {
-        Object leftValue = left.evaluate(env);
-        Object rightValue = right.evaluate(env);
+        Object leftValue = leftOperand.evaluate(env);
+        Object rightValue = rightOperand.evaluate(env);
 
         switch (operator) {
             case "+":
-                if (leftValue instanceof String || rightValue instanceof String) {
-                    return String.valueOf(leftValue) + rightValue;
-                }
-                return toDouble(leftValue) + toDouble(rightValue);
+                return evaluateAddition(leftValue, rightValue);
             case "-":
-                return toDouble(leftValue) - toDouble(rightValue);
+                return ValueHelper.asNumber(leftValue, "Left operand for '-'")
+                        - ValueHelper.asNumber(rightValue, "Right operand for '-'");
             case "*":
-                return toDouble(leftValue) * toDouble(rightValue);
+                return ValueHelper.asNumber(leftValue, "Left operand for '*'")
+                        * ValueHelper.asNumber(rightValue, "Right operand for '*'");
             case "/":
-                return toDouble(leftValue) / toDouble(rightValue);
+                return ValueHelper.asNumber(leftValue, "Left operand for '/'")
+                        / ValueHelper.asNumber(rightValue, "Right operand for '/'");
             case ">":
-                return toDouble(leftValue) > toDouble(rightValue);
+                return ValueHelper.asNumber(leftValue, "Left operand for '>'")
+                        > ValueHelper.asNumber(rightValue, "Right operand for '>'");
             case "<":
-                return toDouble(leftValue) < toDouble(rightValue);
+                return ValueHelper.asNumber(leftValue, "Left operand for '<'")
+                        < ValueHelper.asNumber(rightValue, "Right operand for '<'");
             case "==":
-                if (leftValue instanceof Number && rightValue instanceof Number) {
-                    return Double.compare(toDouble(leftValue), toDouble(rightValue)) == 0;
-                }
-                return leftValue == null ? rightValue == null : leftValue.equals(rightValue);
+                return evaluateEquality(leftValue, rightValue);
             default:
                 throw new RuntimeException("Unknown operator: " + operator);
         }
     }
 
-    private double toDouble(Object value) {
-        if (value instanceof Number) {
-            return ((Number) value).doubleValue();
+    private Object evaluateAddition(Object leftValue, Object rightValue) {
+        // Supports string concatenation if either side is textual.
+        if (leftValue instanceof String || rightValue instanceof String) {
+            return String.valueOf(leftValue) + rightValue;
         }
-        throw new RuntimeException("Expected numeric value but got: " + value);
+        return ValueHelper.asNumber(leftValue, "Left operand for '+'")
+                + ValueHelper.asNumber(rightValue, "Right operand for '+'");
+    }
+
+    private boolean evaluateEquality(Object leftValue, Object rightValue) {
+        if (leftValue instanceof Number && rightValue instanceof Number) {
+            return Double.compare(
+                    ValueHelper.asNumber(leftValue, "Left operand for '=='"),
+                    ValueHelper.asNumber(rightValue, "Right operand for '=='")) == 0;
+        }
+        return leftValue == null ? rightValue == null : leftValue.equals(rightValue);
     }
 }

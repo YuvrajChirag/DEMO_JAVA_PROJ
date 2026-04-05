@@ -1,20 +1,16 @@
+/**
+ * Output instruction that prints expression results to standard output.
+ */
 public class PrintInstruction implements Instruction {
-    private final Expression expression;
+    private final Expression expressionToPrint;
 
-    public PrintInstruction(Expression expression) {
-        this.expression = expression;
+    public PrintInstruction(Expression expressionToPrint) {
+        this.expressionToPrint = expressionToPrint;
     }
 
     @Override
     public void execute(Environment env) {
-        Object value = expression.evaluate(env);
-        if (value instanceof Number) {
-            double d = ((Number) value).doubleValue();
-            if (d == Math.rint(d)) {
-                System.out.println((long) d);
-                return;
-            }
-        }
-        System.out.println(value);
+        Object value = expressionToPrint.evaluate(env);
+        System.out.println(ValueHelper.formatForDisplay(value));
     }
 }

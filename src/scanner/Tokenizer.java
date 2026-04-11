@@ -22,6 +22,9 @@ public class Tokenizer {
         this.source = source == null ? "" : source;
     }
 
+    /**
+     * Performs full lexical analysis on source text.
+     */
     public List<Token> tokenize() {
         List<Token> tokens = new ArrayList<>();
         Deque<Integer> indentLevels = new ArrayDeque<>();
@@ -49,6 +52,9 @@ public class Tokenizer {
         return tokens;
     }
 
+    /**
+     * Emits INDENT/DEDENT tokens based on current line indentation depth.
+     */
     private void processIndentation(List<Token> tokens, Deque<Integer> indentLevels, String line, int lineNumber) {
         int indent = countIndent(line, lineNumber);
 
@@ -71,6 +77,9 @@ public class Tokenizer {
         }
     }
 
+    /**
+     * Flushes remaining indentation levels at end of file.
+     */
     private void closeOpenIndentationBlocks(List<Token> tokens, Deque<Integer> indentLevels, int lineCount) {
         while (indentLevels.peek() > 0) {
             indentLevels.pop();
@@ -78,6 +87,9 @@ public class Tokenizer {
         }
     }
 
+    /**
+     * Counts leading spaces and validates indentation rules.
+     */
     private int countIndent(String line, int lineNumber) {
         int indent = 0;
         while (indent < line.length() && line.charAt(indent) == ' ') {
@@ -92,6 +104,9 @@ public class Tokenizer {
         return indent;
     }
 
+    /**
+     * Tokenizes a single non-empty source line.
+     */
     private void tokenizeLine(String line, int lineNumber, List<Token> tokens) {
         int currentIndex = 0;
         while (currentIndex < line.length()) {
@@ -127,6 +142,9 @@ public class Tokenizer {
         }
     }
 
+    /**
+     * Consumes a numeric literal starting at startIndex.
+     */
     private int tokenizeNumber(String line, int lineNumber, List<Token> tokens, int startIndex) {
         int endIndex = startIndex;
         while (endIndex < line.length() && (Character.isDigit(line.charAt(endIndex)) || line.charAt(endIndex) == '.')) {
@@ -136,6 +154,9 @@ public class Tokenizer {
         return endIndex;
     }
 
+    /**
+     * Consumes identifiers and keyword-like names.
+     */
     private int tokenizeIdentifier(String line, int lineNumber, List<Token> tokens, int startIndex) {
         int endIndex = startIndex;
         while (endIndex < line.length()
@@ -146,6 +167,9 @@ public class Tokenizer {
         return endIndex;
     }
 
+    /**
+     * Consumes a quoted string literal with basic escape handling.
+     */
     private int tokenizeString(String line, int lineNumber, List<Token> tokens, int openingQuoteIndex) {
         int currentIndex = openingQuoteIndex + 1;
         StringBuilder value = new StringBuilder();
@@ -170,6 +194,9 @@ public class Tokenizer {
         return currentIndex + 1;
     }
 
+    /**
+     * Resolves supported escaped characters (\n, \t, or raw character fallback).
+     */
     private char resolveEscapeCharacter(char escapedChar) {
         switch (escapedChar) {
             case 'n':
@@ -181,6 +208,9 @@ public class Tokenizer {
         }
     }
 
+    /**
+     * Tries to tokenize 2-character operators and returns new index if matched.
+     */
     private int tokenizeMultiCharacterToken(String line, int lineNumber, List<Token> tokens, int currentIndex) {
         if (matches(line, currentIndex, ":=")) {
             tokens.add(new Token(TokenType.ASSIGN, ":=", lineNumber));
@@ -201,11 +231,17 @@ public class Tokenizer {
         return currentIndex;
     }
 
+    /**
+     * Checks whether the current index starts with tokenText.
+     */
     private boolean matches(String line, int index, String tokenText) {
         return index + tokenText.length() <= line.length()
                 && line.substring(index, index + tokenText.length()).equals(tokenText);
     }
 
+    /**
+     * Tokenizes one-character operators and punctuations.
+     */
     private int tokenizeSingleCharacterToken(List<Token> tokens, int lineNumber, char currentChar, int currentIndex) {
         switch (currentChar) {
             case '+':

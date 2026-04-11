@@ -2,17 +2,28 @@ package parser;
 
 import environment.Environment;
 
+/**
+ * AST node for binary operators like +, -, *, /, >, <, and ==.
+ */
 public class BinaryOpNode implements Expression<Object> {
     private final Expression<Object> leftOperand;
     private final String operator;
     private final Expression<Object> rightOperand;
 
+    /**
+     * @param leftOperand left-hand side expression
+     * @param operator operator symbol
+     * @param rightOperand right-hand side expression
+     */
     public BinaryOpNode(Expression<Object> leftOperand, String operator, Expression<Object> rightOperand) {
         this.leftOperand = leftOperand;
         this.operator = operator;
         this.rightOperand = rightOperand;
     }
 
+    /**
+     * Evaluates both sides and applies the binary operator semantics.
+     */
     @Override
     public Object evaluate(Environment<Object> env) {
         Object leftValue = leftOperand.evaluate(env);
@@ -48,6 +59,9 @@ public class BinaryOpNode implements Expression<Object> {
         }
     }
 
+    /**
+     * Converts an evaluated value into a double for numeric operators.
+     */
     private double asNumber(Object value) {
         if (value instanceof Number) {
             return ((Number) value).doubleValue();

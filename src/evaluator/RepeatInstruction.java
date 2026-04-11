@@ -5,6 +5,9 @@ import parser.Expression;
 
 import java.util.List;
 
+/**
+ * Loop instruction that executes a body a numeric number of times.
+ */
 public class RepeatInstruction implements Instruction {
     private final Expression<Object> repeatCountExpression;
     private final List<Instruction> bodyInstructions;
@@ -14,6 +17,9 @@ public class RepeatInstruction implements Instruction {
         this.bodyInstructions = bodyInstructions;
     }
 
+    /**
+     * Evaluates the repeat count, validates it, then executes body in a loop.
+     */
     @Override
     public void execute(Environment<Object> env) {
         Object value = repeatCountExpression.evaluate(env);

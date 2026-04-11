@@ -11,6 +11,9 @@ import scanner.TokenType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Recursive-descent parser that transforms tokens into executable instructions.
+ */
 public class Parser {
     private final List<Token> tokens;
     private int currentIndex = 0;
@@ -19,6 +22,9 @@ public class Parser {
         this.tokens = tokens;
     }
 
+    /**
+     * Parses the full token stream into a top-level instruction list.
+     */
     public List<Instruction> parse() {
         List<Instruction> instructions = new ArrayList<>();
         while (!isAtEnd()) {
@@ -32,6 +38,9 @@ public class Parser {
         return instructions;
     }
 
+    /**
+     * Parses one instruction based on the current leading token.
+     */
     private Instruction parseInstruction() {
         if (match(TokenType.IF)) {
             return parseIfInstruction();
@@ -48,6 +57,9 @@ public class Parser {
         throw error(peek(), "Unknown instruction starting with token " + peek().getType());
     }
 
+    /**
+     * Parses an if-block instruction.
+     */
     private Instruction parseIfInstruction() {
         Expression<Boolean> condition = parseBooleanExpression();
         consume(TokenType.ARROW, "Expected '=>' after if condition.");
@@ -56,6 +68,9 @@ public class Parser {
         return new IfInstruction(condition, parseBlock());
     }
 
+    /**
+     * Parses a repeat-block instruction.
+     */
     private Instruction parseRepeatInstruction() {
         Expression<Object> countExpression = parseExpression();
         consume(TokenType.ARROW, "Expected '=>' after repeat count.");
@@ -64,12 +79,18 @@ public class Parser {
         return new RepeatInstruction(countExpression, parseBlock());
     }
 
+    /**
+     * Parses a variable assignment instruction.
+     */
     private Instruction parseAssignmentInstruction() {
         String variableName = consume(TokenType.IDENTIFIER, "Expected variable name.").getValue();
         consume(TokenType.ASSIGN, "Expected ':=' after variable name.");
         return new AssignInstruction(variableName, parseExpression());
     }
 
+    /**
+     * Parses an indented block until DEDENT.
+     */
     private List<Instruction> parseBlock() {
         List<Instruction> body = new ArrayList<>();
         while (!check(TokenType.DEDENT) && !isAtEnd()) {
@@ -84,10 +105,16 @@ public class Parser {
         return body;
     }
 
+    /**
+     * Parses a generic expression entry point.
+     */
     private Expression<Object> parseExpression() {
         return parseComparison();
     }
 
+    /**
+     * Parses and validates a boolean condition expression.
+     */
     private Expression<Boolean> parseBooleanExpression() {
         Expression<Object> expression = parseComparison();
         return env -> {
@@ -99,6 +126,9 @@ public class Parser {
         };
     }
 
+    /**
+     * Parses comparison operators with lower precedence than arithmetic.
+     */
     private Expression<Object> parseComparison() {
         Expression<Object> expression = parseTermExpression();
         while (match(TokenType.GT, TokenType.LT, TokenType.EQEQ)) {
@@ -109,6 +139,9 @@ public class Parser {
         return expression;
     }
 
+    /**
+     * Parses additive operators (+ and -).
+     */
     private Expression<Object> parseTermExpression() {
         Expression<Object> expression = parseFactor();
         while (match(TokenType.PLUS, TokenType.MINUS)) {
@@ -119,6 +152,9 @@ public class Parser {
         return expression;
     }
 
+    /**
+     * Parses multiplicative operators (* and /).
+     */
     private Expression<Object> parseFactor() {
         Expression<Object> expression = parsePrimary();
         while (match(TokenType.STAR, TokenType.SLASH)) {
@@ -129,6 +165,9 @@ public class Parser {
         return expression;
     }
 
+    /**
+     * Parses primitive values, variables, and parenthesized expressions.
+     */
     private Expression<Object> parsePrimary() {
         if (match(TokenType.NUMBER)) {
             return new NumberNode(Double.parseDouble(previous().getValue()));
@@ -147,11 +186,17 @@ public class Parser {
         throw error(peek(), "Expected expression.");
     }
 
+    /**
+     * Consumes consecutive NEWLINE tokens.
+     */
     private void skipNewlines() {
         while (match(TokenType.NEWLINE)) {
         }
     }
 
+    /**
+     * Advances if current token matches any provided type.
+     */
     private boolean match(TokenType... types) {
         for (TokenType type : types) {
             if (check(type)) {
@@ -162,6 +207,9 @@ public class Parser {
         return false;
     }
 
+    /**
+     * Consumes one token of expected type or throws a parse error.
+     */
     private Token consume(TokenType expectedType, String message) {
         if (check(expectedType)) {
             return advance();
@@ -169,6 +217,9 @@ public class Parser {
         throw error(peek(), message);
     }
 
+    /**
+     * Checks if current token is of the provided type.
+     */
     private boolean check(TokenType type) {
         if (isAtEnd()) {
             return type == TokenType.EOF;
@@ -176,6 +227,9 @@ public class Parser {
         return peek().getType() == type;
     }
 
+    /**
+     * Looks one token ahead without consuming it.
+     */
     private boolean checkNext(TokenType type) {
         if (currentIndex + 1 >= tokens.size()) {
             return false;
@@ -183,6 +237,9 @@ public class Parser {
         return tokens.get(currentIndex + 1).getType() == type;
     }
 
+    /**
+     * Moves parser cursor forward and returns consumed token.
+     */
     private Token advance() {
         if (!isAtEnd()) {
             currentIndex++;
@@ -190,18 +247,30 @@ public class Parser {
         return previous();
     }
 
+    /**
+     * Returns true when parser reached EOF token.
+     */
     private boolean isAtEnd() {
         return peek().getType() == TokenType.EOF;
     }
 
+    /**
+     * Returns current token without consuming it.
+     */
     private Token peek() {
         return tokens.get(currentIndex);
     }
 
+    /**
+     * Returns most recently consumed token.
+     */
     private Token previous() {
         return tokens.get(currentIndex - 1);
     }
 
+    /**
+     * Constructs consistent parse exceptions with line number details.
+     */
     private RuntimeException error(Token token, String message) {
         return new IllegalArgumentException("Parse error at line " + token.getLine() + ": " + message);
     }

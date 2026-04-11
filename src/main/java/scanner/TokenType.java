@@ -1,3 +1,5 @@
+package scanner;
+
 public enum TokenType {
     NUMBER,
     STRING,
@@ -6,11 +8,11 @@ public enum TokenType {
     MINUS,
     STAR,
     SLASH,
-    ASSIGN,      // :=
-    PRINT,       // >>
-    IF,          // ?
-    REPEAT,      // @
-    ARROW,       // =>
+    ASSIGN,
+    PRINT,
+    IF,
+    REPEAT,
+    ARROW,
     GT,
     LT,
     EQEQ,

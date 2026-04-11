@@ -1,20 +1,26 @@
+package parser;
+
+import evaluator.AssignInstruction;
+import evaluator.IfInstruction;
+import evaluator.Instruction;
+import evaluator.PrintInstruction;
+import evaluator.RepeatInstruction;
+import scanner.Token;
+import scanner.TokenType;
+
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Concrete parser that converts tokens into an AST-like instruction list.
- */
-public class CalcParser implements Parser<List<Instruction<Object>>> {
+public class Parser {
     private final List<Token> tokens;
     private int currentIndex = 0;
 
-    public CalcParser(List<Token> tokens) {
+    public Parser(List<Token> tokens) {
         this.tokens = tokens;
     }
 
-    @Override
-    public List<Instruction<Object>> parse() {
-        List<Instruction<Object>> instructions = new ArrayList<>();
+    public List<Instruction> parse() {
+        List<Instruction> instructions = new ArrayList<>();
         while (!isAtEnd()) {
             skipNewlines();
             if (isAtEnd()) {
@@ -26,54 +32,46 @@ public class CalcParser implements Parser<List<Instruction<Object>>> {
         return instructions;
     }
 
-    private Instruction<Object> parseInstruction() {
+    private Instruction parseInstruction() {
         if (match(TokenType.IF)) {
             return parseIfInstruction();
         }
-
         if (match(TokenType.REPEAT)) {
             return parseRepeatInstruction();
         }
-
         if (match(TokenType.PRINT)) {
-            Expression<Object> expression = parseExpression();
-            return new PrintInstruction(expression);
+            return new PrintInstruction(parseExpression());
         }
-
         if (check(TokenType.IDENTIFIER) && checkNext(TokenType.ASSIGN)) {
             return parseAssignmentInstruction();
         }
-
         throw error(peek(), "Unknown instruction starting with token " + peek().getType());
     }
 
-    private Instruction<Object> parseIfInstruction() {
+    private Instruction parseIfInstruction() {
         Expression<Boolean> condition = parseBooleanExpression();
         consume(TokenType.ARROW, "Expected '=>' after if condition.");
         consume(TokenType.NEWLINE, "Expected newline after if header.");
         consume(TokenType.INDENT, "Expected indented block after if.");
-        List<Instruction<Object>> body = parseBlock();
-        return new IfInstruction(condition, body);
+        return new IfInstruction(condition, parseBlock());
     }
 
-    private Instruction<Object> parseRepeatInstruction() {
+    private Instruction parseRepeatInstruction() {
         Expression<Object> countExpression = parseExpression();
         consume(TokenType.ARROW, "Expected '=>' after repeat count.");
         consume(TokenType.NEWLINE, "Expected newline after repeat header.");
         consume(TokenType.INDENT, "Expected indented block after repeat.");
-        List<Instruction<Object>> body = parseBlock();
-        return new RepeatInstruction(countExpression, body);
+        return new RepeatInstruction(countExpression, parseBlock());
     }
 
-    private Instruction<Object> parseAssignmentInstruction() {
+    private Instruction parseAssignmentInstruction() {
         String variableName = consume(TokenType.IDENTIFIER, "Expected variable name.").getValue();
         consume(TokenType.ASSIGN, "Expected ':=' after variable name.");
-        Expression<Object> expression = parseExpression();
-        return new AssignInstruction(variableName, expression);
+        return new AssignInstruction(variableName, parseExpression());
     }
 
-    private List<Instruction<Object>> parseBlock() {
-        List<Instruction<Object>> body = new ArrayList<>();
+    private List<Instruction> parseBlock() {
+        List<Instruction> body = new ArrayList<>();
         while (!check(TokenType.DEDENT) && !isAtEnd()) {
             skipNewlines();
             if (check(TokenType.DEDENT) || isAtEnd()) {
@@ -92,7 +90,13 @@ public class CalcParser implements Parser<List<Instruction<Object>>> {
 
     private Expression<Boolean> parseBooleanExpression() {
         Expression<Object> expression = parseComparison();
-        return env -> ValueHelper.asBoolean(expression.evaluate(env), "If condition");
+        return env -> {
+            Object value = expression.evaluate(env);
+            if (value instanceof Boolean) {
+                return (Boolean) value;
+            }
+            throw new IllegalArgumentException("If condition must be Boolean but got: " + value);
+        };
     }
 
     private Expression<Object> parseComparison() {
@@ -127,10 +131,10 @@ public class CalcParser implements Parser<List<Instruction<Object>>> {
 
     private Expression<Object> parsePrimary() {
         if (match(TokenType.NUMBER)) {
-            return new LiteralNode<>(Double.parseDouble(previous().getValue()));
+            return new NumberNode(Double.parseDouble(previous().getValue()));
         }
         if (match(TokenType.STRING)) {
-            return new LiteralNode<>(previous().getValue());
+            return new StringNode(previous().getValue());
         }
         if (match(TokenType.IDENTIFIER)) {
             return new VariableNode(previous().getValue());
@@ -145,7 +149,6 @@ public class CalcParser implements Parser<List<Instruction<Object>>> {
 
     private void skipNewlines() {
         while (match(TokenType.NEWLINE)) {
-            // consume contiguous line breaks
         }
     }
 

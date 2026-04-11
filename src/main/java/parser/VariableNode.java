@@ -1,6 +1,7 @@
-/**
- * Expression node for reading variable values from the environment.
- */
+package parser;
+
+import environment.Environment;
+
 public class VariableNode implements Expression<Object> {
     private final String name;
 

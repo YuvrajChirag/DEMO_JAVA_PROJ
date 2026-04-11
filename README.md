@@ -2,14 +2,30 @@
 
 A simple interpreter for a custom indentation-aware scripting language.
 
-## Execution Flow
-`Tokenizer -> Parser -> Interpreter`
+## ✨ Features
+- Layered architecture: **Tokenizer → Parser → Evaluator**.
+- Clear separation of responsibilities across scanner, parser, and evaluator modules.
+- Supports assignments, arithmetic expressions, print statements, conditionals, and repeat blocks.
+- Clean project organization for maintainability.
 
-1. **Tokenizer** converts source code into tokens.
-2. **Parser** converts tokens into executable instructions.
-3. **Interpreter** executes instructions using runtime variables.
+## 🛠️ Technologies Used
+- **Java 17**
+- **Java Collections Framework** (`List`, `Map`, `Deque`)
+- **Java NIO** (`Files`, `Path`) for file IO
 
-## Project Structure
+## 👥 Module Ownership
+- **Tokenizer**: Shipli Shaw
+- **Parser**: Mausam Kumari
+- **Evaluator**: Yuvraj Chirag
+
+## ⚙️ Working Flow
+`Tokenizer → Parser → Evaluator`
+
+1. **Tokenizer** converts raw source code into lexical tokens (`Token`).
+2. **Parser** builds instruction/expression objects from tokens.
+3. **Evaluator** executes parsed instructions against an environment.
+
+## 📁 Project Structure
 
 ```text
 DEMO_JAVA_PROJ/
@@ -19,7 +35,6 @@ DEMO_JAVA_PROJ/
 │   ├── program3.calc
 │   └── program4.calc
 ├── src/main/java/
-│   ├── Main.java
 │   ├── environment/
 │   │   └── Environment.java
 │   ├── evaluator/
@@ -37,29 +52,41 @@ DEMO_JAVA_PROJ/
 │   │   ├── Parser.java
 │   │   ├── StringNode.java
 │   │   └── VariableNode.java
-│   └── scanner/
-│       ├── Token.java
-│       ├── TokenType.java
-│       └── Tokenizer.java
+│   ├── scanner/
+│   │   ├── Token.java
+│   │   ├── Tokenizer.java
+│   │   └── TokenType.java
+│   └── Main.java
 └── README.md
 ```
 
-## Requirements
-- Java 17+
-
-## Compile
+## ▶️ Compile
 ```bash
 javac $(find src/main/java -name "*.java")
 ```
 
-## Run
+## ▶️ Run
 ```bash
 java -cp src/main/java Main examples/program1.calc
 ```
 
-## Try Other Examples
+## 🔁 Try Other Examples
 ```bash
 java -cp src/main/java Main examples/program2.calc
 java -cp src/main/java Main examples/program3.calc
 java -cp src/main/java Main examples/program4.calc
+```
+
+## 🧩 Example Input & Output
+
+### Input (`examples/program1.calc`)
+```text
+x := 10
+y := 20
+>> x + y
+```
+
+### Output
+```text
+30
 ```

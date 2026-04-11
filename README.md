@@ -34,7 +34,7 @@ DEMO_JAVA_PROJ/
 │   ├── program2.calc
 │   ├── program3.calc
 │   └── program4.calc
-├── src/main/java/
+├── src/
 │   ├── environment/
 │   │   └── Environment.java
 │   ├── evaluator/
@@ -62,19 +62,19 @@ DEMO_JAVA_PROJ/
 
 ## ▶️ Compile
 ```bash
-javac $(find src/main/java -name "*.java")
+javac $(find src -name "*.java")
 ```
 
 ## ▶️ Run
 ```bash
-java -cp src/main/java Main examples/program1.calc
+java -cp src Main examples/program1.calc
 ```
 
 ## 🔁 Try Other Examples
 ```bash
-java -cp src/main/java Main examples/program2.calc
-java -cp src/main/java Main examples/program3.calc
-java -cp src/main/java Main examples/program4.calc
+java -cp src Main examples/program2.calc
+java -cp src Main examples/program3.calc
+java -cp src Main examples/program4.calc
 ```
 
 ## 🧩 Example Input & Output

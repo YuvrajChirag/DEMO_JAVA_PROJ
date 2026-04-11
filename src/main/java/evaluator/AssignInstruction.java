@@ -1,7 +1,9 @@
-/**
- * Assigns evaluated expression value to a named variable.
- */
-public class AssignInstruction implements Instruction<Object> {
+package evaluator;
+
+import environment.Environment;
+import parser.Expression;
+
+public class AssignInstruction implements Instruction {
     private final String variableName;
     private final Expression<Object> expression;
 

@@ -1,3 +1,5 @@
+import interpreter.Interpreter;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,7 +12,6 @@ public class Main {
         }
 
         String sourceCode = Files.readString(Path.of(args[0]));
-        Interpreter interpreter = Interpreter.defaultInterpreter();
-        interpreter.run(sourceCode);
+        new Interpreter().run(sourceCode);
     }
 }
